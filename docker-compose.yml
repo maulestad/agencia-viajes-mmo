@@ -1,0 +1,88 @@
+# Docker local (equivalente a XAMPP):   docker compose up -d --build
+#   Sistema:     http://localhost:8080
+#   phpMyAdmin:  http://localhost:8081
+# Probar como en Render (PostgreSQL):   docker compose --profile pg up -d --build
+#   Sistema PG:  http://localhost:8090
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "1"
+      DB_DRIVER: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: agencia_viajes
+      DB_USER: agencia
+      DB_PASS: agencia123
+      ADMIN_PASSWORD: admin123
+    volumes:
+      - ./storage/backups:/var/www/html/storage/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    command: --max_allowed_packet=64M --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: agencia_viajes
+      MYSQL_USER: agencia
+      MYSQL_PASSWORD: agencia123
+      MYSQL_ROOT_PASSWORD: root123
+      TZ: America/La_Paz
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      - db
+
+  # ---- Perfil opcional "pg": misma app con PostgreSQL, igual que en Render ----
+  app-pg:
+    profiles: ["pg"]
+    build: .
+    ports:
+      - "8090:10000"
+    environment:
+      PORT: "10000"
+      APP_ENV: production
+      APP_DEBUG: "1"
+      DATABASE_URL: postgres://agencia:agencia123@pg:5432/agencia
+    depends_on:
+      pg:
+        condition: service_healthy
+
+  pg:
+    profiles: ["pg"]
+    image: postgres:16
+    environment:
+      POSTGRES_DB: agencia
+      POSTGRES_USER: agencia
+      POSTGRES_PASSWORD: agencia123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agencia -d agencia"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  mysqldata:
+  pgdata:

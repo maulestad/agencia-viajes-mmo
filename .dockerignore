@@ -1,0 +1,8 @@
+.git
+.env
+storage/backups/*
+storage/logs/*
+storage/sessions/*
+docker-compose.yml
+*.md
+docs

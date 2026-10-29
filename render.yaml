@@ -1,0 +1,34 @@
+# Blueprint de Render. NO se despliega solo: autoDeploy está desactivado.
+# Uso: suba el repo a GitHub -> Render Dashboard -> New -> Blueprint -> elija el repo.
+# Después, cada despliegue se hace manualmente con "Manual Deploy".
+services:
+  - type: web
+    name: agencia-viajes
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health.php
+    autoDeploy: false
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "0"
+      - key: APP_NAME
+        value: Agencia de Viajes
+      - key: SEED_DEMO
+        value: "1"
+      - key: ADMIN_PASSWORD
+        sync: false        # Render le pedirá el valor al crear el Blueprint
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agencia-db
+          property: connectionString
+
+databases:
+  - name: agencia-db
+    plan: free
+    region: oregon
+    databaseName: agencia
+    user: agencia
